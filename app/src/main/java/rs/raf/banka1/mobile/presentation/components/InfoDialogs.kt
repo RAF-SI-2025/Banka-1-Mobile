@@ -121,7 +121,7 @@ fun AppAlertDialog(
             }
         },
         text = {
-            CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.secondary) {
+            CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurface) {
                 text?.invoke()
             }
         },
@@ -129,7 +129,7 @@ fun AppAlertDialog(
             TextButton(onClick = confirmAction) {
                 Text(
                     confirmText,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         },

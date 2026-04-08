@@ -8,14 +8,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.MarkEmailRead
+import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -23,20 +21,41 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import rs.raf.banka1.mobile.presentation.components.AbstractEmailArt
+import rs.raf.banka1.mobile.presentation.components.ErrorDialog
 import rs.raf.banka1.mobile.presentation.components.InputField
 import rs.raf.banka1.mobile.presentation.components.StaggeredAnimItem
-import androidx.compose.material.icons.rounded.ArrowBack
+import rs.raf.banka1.mobile.presentation.viewmodels.auth.ForgotPasswordContract
+import rs.raf.banka1.mobile.presentation.viewmodels.auth.ForgotPasswordViewModel
 
 @Composable
 fun ForgotPasswordScreen(
+    viewModel: ForgotPasswordViewModel,
     onNavigateBack: () -> Unit,
-    onSubmit: (String) -> Unit
+    onNavigateToConfirmation: (String) -> Unit
 ) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val onEvent = viewModel::setEvent
+
     var email by rememberSaveable { mutableStateOf("") }
     val isEmailValid = Patterns.EMAIL_ADDRESS.matcher(email).matches()
     val emailError = if (email.isNotEmpty() && !isEmailValid) "Neispravan format" else null
-    var isSubmitting by remember { mutableStateOf(false) }
+
+    if (state.error != null) {
+        ErrorDialog(errorData = state.error) {
+            onEvent(ForgotPasswordContract.UiEvent.ClearError)
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.effect.collect { effect ->
+            when (effect) {
+                is ForgotPasswordContract.SideEffect.NavigateToConfirmation ->
+                    onNavigateToConfirmation(effect.email)
+            }
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -124,10 +143,9 @@ fun ForgotPasswordScreen(
                 StaggeredAnimItem(delayMillis = 450) {
                     Button(
                         onClick = {
-                            isSubmitting = true
-                            onSubmit(email)
+                            onEvent(ForgotPasswordContract.UiEvent.Submit(email))
                         },
-                        enabled = isEmailValid && !isSubmitting,
+                        enabled = isEmailValid && !state.isLoading,
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(bottom = 32.dp)
@@ -139,7 +157,7 @@ fun ForgotPasswordScreen(
                             contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     ) {
-                        if (isSubmitting) {
+                        if (state.isLoading) {
                             CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimaryContainer)
                         } else {
                             Text("Pošalji link za obnovu", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))

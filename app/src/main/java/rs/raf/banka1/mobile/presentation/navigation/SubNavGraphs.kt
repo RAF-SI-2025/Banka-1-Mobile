@@ -5,9 +5,10 @@ import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.navigation
+import androidx.navigation.toRoute
+import rs.raf.banka1.mobile.presentation.screens.auth.EmailSentScreen
 import rs.raf.banka1.mobile.presentation.screens.auth.ForgotPasswordScreen
 import rs.raf.banka1.mobile.presentation.screens.auth.LoginScreen
-import rs.raf.banka1.mobile.presentation.screens.auth.ResetPasswordScreen
 
 fun NavGraphBuilder.authNavGraph(navController: NavController) {
     navigation<Routes.AuthGraph>(startDestination = Routes.AuthFlow.Login) {
@@ -27,18 +28,27 @@ fun NavGraphBuilder.authNavGraph(navController: NavController) {
 
         composable<Routes.AuthFlow.ForgotPassword> {
             ForgotPasswordScreen(
-                onNavigateBack = { navController.popBackStack() }
-            ) { }
+                viewModel = hiltViewModel(),
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToConfirmation = { email ->
+                    navController.navigate(Routes.AuthFlow.EmailSent(email)) {
+                        popUpTo(Routes.AuthFlow.ForgotPassword) { inclusive = true }
+                    }
+                }
+            )
         }
 
-        composable<Routes.AuthFlow.Activate> {
-            // TODO: ActivateScreen
-        }
-
-        composable<Routes.AuthFlow.ResetPassword> {
-            ResetPasswordScreen(
-                onNavigateBack = { navController.popBackStack() }
-            ) { }
+        composable<Routes.AuthFlow.EmailSent> { backStackEntry ->
+            val route = backStackEntry.toRoute<Routes.AuthFlow.EmailSent>()
+            EmailSentScreen(
+                email = route.email,
+                onNavigateToLogin = {
+                    navController.navigate(Routes.AuthFlow.Login) {
+                        popUpTo(Routes.AuthGraph) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
+            )
         }
     }
 }

@@ -24,7 +24,7 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:8080/\"")
+        buildConfigField("String", "BASE_URL", "\"http://192.168.1.15/\"")
     }
 
     buildTypes {
@@ -34,7 +34,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:8080/\"")
+            buildConfigField("String", "BASE_URL", "\"http://192.168.1.15/\"") // fixme, namestiti ovo na lokalnu adresu racunara pre odbrane, moze da se promeni
         }
     }
 
@@ -78,6 +78,7 @@ dependencies {
     // Retrofit + OkHttp + Moshi
     implementation(libs.retrofit)
     implementation(libs.retrofit.moshi)
+    implementation(libs.retrofit.scalars)
     implementation(libs.moshi.kotlin)
     implementation(libs.moshi.adapters)
     implementation(libs.okhttp)

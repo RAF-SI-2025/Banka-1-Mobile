@@ -15,10 +15,7 @@ object Routes {
         data object ForgotPassword : AuthFlow
 
         @Serializable
-        data class Activate(val token: String) : AuthFlow
-
-        @Serializable
-        data class ResetPassword(val token: String) : AuthFlow
+        data class EmailSent(val email: String) : AuthFlow
     }
 
     @Serializable

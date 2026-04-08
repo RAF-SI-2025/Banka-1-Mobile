@@ -10,6 +10,7 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
+import retrofit2.converter.scalars.ScalarsConverterFactory
 import rs.raf.banka1.mobile.BuildConfig
 import rs.raf.banka1.mobile.core.network.call_adapters.NetworkResultCallAdapterFactory
 import rs.raf.banka1.mobile.core.network.interceptors.AuthInterceptor
@@ -70,6 +71,7 @@ object NetworkModule {
         return Retrofit.Builder()
             .baseUrl(BuildConfig.BASE_URL)
             .client(okHttpClient)
+            .addConverterFactory(ScalarsConverterFactory.create())
             .addConverterFactory(MoshiConverterFactory.create(moshi))
             .addCallAdapterFactory(NetworkResultCallAdapterFactory.create(jsonParser))
             .build()

@@ -10,3 +10,4 @@
 local.properties
 .claude/
 *.stackdump
+app/google-services.json

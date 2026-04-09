@@ -18,9 +18,11 @@ import rs.raf.banka1.mobile.core.util.JsonParser
 import rs.raf.banka1.mobile.data.apis.AccountApi
 import rs.raf.banka1.mobile.data.apis.AuthApi
 import rs.raf.banka1.mobile.data.apis.CardApi
+import rs.raf.banka1.mobile.data.apis.ClientApi
 import rs.raf.banka1.mobile.data.apis.ExchangeApi
 import rs.raf.banka1.mobile.data.apis.TransactionApi
 import rs.raf.banka1.mobile.data.apis.TransferApi
+import rs.raf.banka1.mobile.data.apis.NotificationApi
 import rs.raf.banka1.mobile.data.apis.VerificationApi
 import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
@@ -117,5 +119,17 @@ object NetworkModule {
     @Provides
     fun provideVerificationApi(retrofit: Retrofit): VerificationApi {
         return retrofit.create(VerificationApi::class.java)
+    }
+
+    @Singleton
+    @Provides
+    fun provideClientApi(retrofit: Retrofit): ClientApi {
+        return retrofit.create(ClientApi::class.java)
+    }
+
+    @Singleton
+    @Provides
+    fun provideNotificationApi(retrofit: Retrofit): NotificationApi {
+        return retrofit.create(NotificationApi::class.java)
     }
 }

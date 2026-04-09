@@ -87,6 +87,14 @@ class UserPreferencesRepository @Inject constructor(
             }
     }
 
+    suspend fun saveFcmToken(token: String) {
+        write(UserPreferencesKeys.FCM_TOKEN_KEY, token)
+    }
+
+    fun readFcmToken(): Flow<String> {
+        return read(UserPreferencesKeys.FCM_TOKEN_KEY, "")
+    }
+
     suspend fun clearAll() {
         dataStore.edit { it.clear() }
     }
@@ -97,5 +105,6 @@ class UserPreferencesRepository @Inject constructor(
         val CLIENT_NAME_KEY = stringPreferencesKey("client_name_key")
         val CLIENT_LAST_NAME_KEY = stringPreferencesKey("client_last_name_key")
         val CLIENT_EMAIL_KEY = stringPreferencesKey("client_email_key")
+        val FCM_TOKEN_KEY = stringPreferencesKey("fcm_token_key")
     }
 }

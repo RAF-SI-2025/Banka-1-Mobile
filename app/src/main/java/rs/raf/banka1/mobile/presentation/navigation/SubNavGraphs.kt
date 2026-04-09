@@ -9,6 +9,8 @@ import androidx.navigation.toRoute
 import rs.raf.banka1.mobile.presentation.screens.auth.EmailSentScreen
 import rs.raf.banka1.mobile.presentation.screens.auth.ForgotPasswordScreen
 import rs.raf.banka1.mobile.presentation.screens.auth.LoginScreen
+import rs.raf.banka1.mobile.presentation.screens.dashboard.DashboardScreen
+import rs.raf.banka1.mobile.presentation.screens.main.VerificationScreen
 
 fun NavGraphBuilder.authNavGraph(navController: NavController) {
     navigation<Routes.AuthGraph>(startDestination = Routes.AuthFlow.Login) {
@@ -56,7 +58,29 @@ fun NavGraphBuilder.authNavGraph(navController: NavController) {
 fun NavGraphBuilder.mainNavGraph(navController: NavController) {
     navigation<Routes.MainGraph>(startDestination = Routes.MainFlow.Dashboard) {
         composable<Routes.MainFlow.Dashboard> {
-            // TODO: DashboardScreen
+            DashboardScreen(
+                viewModel = hiltViewModel(),
+                onNavigateToVerification = {
+                    navController.navigate(Routes.MainFlow.Verification) {
+                        launchSingleTop = true
+                    }
+                },
+                onNavigateToTransfers = {
+                    navController.navigate(Routes.MainFlow.Transfers) {
+                        launchSingleTop = true
+                    }
+                },
+                onNavigateToPayments = {
+                    navController.navigate(Routes.MainFlow.Payments) {
+                        launchSingleTop = true
+                    }
+                },
+                onNavigateToExchange = {
+                    navController.navigate(Routes.MainFlow.Exchange) {
+                        launchSingleTop = true
+                    }
+                }
+            )
         }
 
         composable<Routes.MainFlow.Accounts> {
@@ -88,7 +112,10 @@ fun NavGraphBuilder.mainNavGraph(navController: NavController) {
         }
 
         composable<Routes.MainFlow.Verification> {
-            // TODO: VerificationScreen
+            VerificationScreen(
+                viewModel = hiltViewModel(),
+                onNavigateBack = { navController.popBackStack() }
+            )
         }
 
         composable<Routes.MainFlow.Profile> {

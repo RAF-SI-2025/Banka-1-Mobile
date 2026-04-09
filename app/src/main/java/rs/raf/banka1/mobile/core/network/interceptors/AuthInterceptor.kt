@@ -1,5 +1,6 @@
 package rs.raf.banka1.mobile.core.network.interceptors
 
+import android.util.Log
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
@@ -18,6 +19,8 @@ class AuthInterceptor @Inject constructor(
         val token = runBlocking {
             userPreferencesRepository.read(UserPreferencesKeys.AUTH_TOKEN_KEY, "").first()
         }
+
+        Log.d("DEBUG", "JWT TOKEN IS $token")
 
         val request = if (token.isNotEmpty()) {
             chain.request().newBuilder()

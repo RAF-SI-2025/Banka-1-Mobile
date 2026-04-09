@@ -7,9 +7,13 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import rs.raf.banka1.mobile.data.apis.AccountApi
+import rs.raf.banka1.mobile.data.apis.ExchangeApi
+import rs.raf.banka1.mobile.data.local.ExchangeRateDao
+import rs.raf.banka1.mobile.data.local.ExchangeRateEntity
 import rs.raf.banka1.mobile.data.local.VerificationCodeDao
 import rs.raf.banka1.mobile.data.remote.NetworkResult
 import rs.raf.banka1.mobile.data.remote.responses.AccountDetailsResponseDto
+import rs.raf.banka1.mobile.data.remote.responses.ExchangeRateDto
 import rs.raf.banka1.mobile.data.repository.UserPreferencesRepository
 import rs.raf.banka1.mobile.presentation.components.ErrorData
 import rs.raf.banka1.mobile.presentation.viewmodels.BaseMviViewModel
@@ -18,6 +22,8 @@ import javax.inject.Inject
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
     private val accountApi: AccountApi,
+    private val exchangeApi: ExchangeApi,
+    private val exchangeRateDao: ExchangeRateDao,
     private val userPreferencesRepository: UserPreferencesRepository,
     private val verificationCodeDao: VerificationCodeDao
 ) : BaseMviViewModel<DashboardContract.UiState, DashboardContract.UiEvent, DashboardContract.SideEffect>(
@@ -27,7 +33,6 @@ class DashboardViewModel @Inject constructor(
     init {
         loadData()
 
-        // Observe active verification code count for the badge
         verificationCodeDao.observeActiveCount(System.currentTimeMillis())
             .onEach { count -> setState { copy(activeVerificationCount = count) } }
             .launchIn(viewModelScope)
@@ -44,7 +49,6 @@ class DashboardViewModel @Inject constructor(
         viewModelScope.launch {
             setState { copy(isLoading = true, error = null) }
 
-            // Load client name from preferences
             val clientData = try {
                 userPreferencesRepository.readClientData().firstOrNull()
             } catch (_: Exception) {
@@ -52,17 +56,21 @@ class DashboardViewModel @Inject constructor(
             }
             setState { copy(clientName = clientData?.name ?: "") }
 
+            // Load exchange rates (try network first, fall back to cached)
+            val rates = loadExchangeRates()
+            setState { copy(exchangeRates = rates) }
+
             // Load accounts
             when (val result = accountApi.getMyAccounts(page = 0, size = 10)) {
                 is NetworkResult.Success -> {
                     val accounts = result.data.content
-                    val totalBalance = accounts.sumOf { it.raspolozivoStanje ?: 0.0 }
+                    val totalBalanceRsd = computeTotalBalanceRsd(accounts, rates)
                     val primaryCurrency = accounts.firstOrNull()?.currency ?: "RSD"
                     setState {
                         copy(
                             isLoading = false,
                             accounts = accounts,
-                            totalBalance = totalBalance,
+                            totalBalanceRsd = totalBalanceRsd,
                             primaryCurrency = primaryCurrency
                         )
                     }
@@ -79,6 +87,51 @@ class DashboardViewModel @Inject constructor(
             }
         }
     }
+
+    private suspend fun loadExchangeRates(): List<ExchangeRateDto> {
+        // Try fetching from network
+        when (val result = exchangeApi.getRates()) {
+            is NetworkResult.Success -> {
+                val rates = result.data
+                // Persist to local DB
+                val entities = rates.mapNotNull { dto ->
+                    val code = dto.currencyCode ?: return@mapNotNull null
+                    ExchangeRateEntity(
+                        currencyCode = code,
+                        buyingRate = dto.buyingRate ?: 0.0,
+                        sellingRate = dto.sellingRate ?: 0.0,
+                        date = dto.date ?: ""
+                    )
+                }
+                exchangeRateDao.insertAll(entities)
+                return rates
+            }
+            else -> {
+                // Fall back to cached rates
+                return exchangeRateDao.getAll().map { entity ->
+                    ExchangeRateDto(
+                        currencyCode = entity.currencyCode,
+                        buyingRate = entity.buyingRate,
+                        sellingRate = entity.sellingRate,
+                        date = entity.date
+                    )
+                }
+            }
+        }
+    }
+
+    private fun computeTotalBalanceRsd(
+        accounts: List<AccountDetailsResponseDto>,
+        rates: List<ExchangeRateDto>
+    ): Double {
+        val rateMap = rates.associate { (it.currencyCode ?: "") to (it.sellingRate ?: 1.0) }
+        return accounts.sumOf { account ->
+            val balance = account.raspolozivoStanje ?: 0.0
+            val currency = account.currency ?: "RSD"
+            if (currency == "RSD") balance
+            else balance * (rateMap[currency] ?: 1.0)
+        }
+    }
 }
 
 interface DashboardContract {
@@ -86,10 +139,11 @@ interface DashboardContract {
         val isLoading: Boolean = false,
         val clientName: String = "",
         val accounts: List<AccountDetailsResponseDto> = emptyList(),
-        val totalBalance: Double = 0.0,
+        val totalBalanceRsd: Double = 0.0,
         val primaryCurrency: String = "RSD",
         val error: ErrorData? = null,
-        val activeVerificationCount: Int = 0
+        val activeVerificationCount: Int = 0,
+        val exchangeRates: List<ExchangeRateDto> = emptyList()
     )
 
     sealed interface UiEvent {

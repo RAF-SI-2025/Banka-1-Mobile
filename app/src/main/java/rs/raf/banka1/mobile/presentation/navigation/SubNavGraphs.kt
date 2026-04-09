@@ -10,6 +10,7 @@ import rs.raf.banka1.mobile.presentation.screens.auth.EmailSentScreen
 import rs.raf.banka1.mobile.presentation.screens.auth.ForgotPasswordScreen
 import rs.raf.banka1.mobile.presentation.screens.auth.LoginScreen
 import rs.raf.banka1.mobile.presentation.screens.dashboard.DashboardScreen
+import rs.raf.banka1.mobile.presentation.screens.exchange.ExchangeScreen
 import rs.raf.banka1.mobile.presentation.screens.main.VerificationScreen
 
 fun NavGraphBuilder.authNavGraph(navController: NavController) {
@@ -65,16 +66,6 @@ fun NavGraphBuilder.mainNavGraph(navController: NavController) {
                         launchSingleTop = true
                     }
                 },
-                onNavigateToTransfers = {
-                    navController.navigate(Routes.MainFlow.Transfers) {
-                        launchSingleTop = true
-                    }
-                },
-                onNavigateToPayments = {
-                    navController.navigate(Routes.MainFlow.Payments) {
-                        launchSingleTop = true
-                    }
-                },
                 onNavigateToExchange = {
                     navController.navigate(Routes.MainFlow.Exchange) {
                         launchSingleTop = true
@@ -108,7 +99,10 @@ fun NavGraphBuilder.mainNavGraph(navController: NavController) {
         }
 
         composable<Routes.MainFlow.Exchange> {
-            // TODO: ExchangeScreen
+            ExchangeScreen(
+                viewModel = hiltViewModel(),
+                onNavigateBack = { navController.popBackStack() }
+            )
         }
 
         composable<Routes.MainFlow.Verification> {

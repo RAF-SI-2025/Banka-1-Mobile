@@ -24,10 +24,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.CurrencyExchange
-import androidx.compose.material.icons.filled.Payment
 import androidx.compose.material.icons.filled.Shield
-import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.Wallet
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -49,7 +48,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
@@ -58,6 +56,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
 import rs.raf.banka1.mobile.data.remote.responses.AccountDetailsResponseDto
+import rs.raf.banka1.mobile.data.remote.responses.ExchangeRateDto
 import rs.raf.banka1.mobile.presentation.components.ErrorDialog
 import rs.raf.banka1.mobile.presentation.viewmodels.main.DashboardContract
 import rs.raf.banka1.mobile.presentation.viewmodels.main.DashboardViewModel
@@ -65,9 +64,11 @@ import java.text.NumberFormat
 import java.util.Locale
 import kotlin.math.roundToInt
 
+// --- Stagger entrance animation ---
+
 private const val SECTION_COUNT = 4
-private const val STAGGER_DELAY_MS = 70L
-private const val ANIM_DURATION_MS = 420
+private const val STAGGER_DELAY_MS = 40L
+private const val ANIM_DURATION_MS = 300
 private const val SLIDE_OFFSET_DP = 28f
 
 @Composable
@@ -97,12 +98,12 @@ private fun Modifier.staggerEntrance(progress: Float): Modifier {
         .alpha(progress)
 }
 
+// --- Dashboard Screen ---
+
 @Composable
 fun DashboardScreen(
     viewModel: DashboardViewModel,
     onNavigateToVerification: () -> Unit,
-    onNavigateToTransfers: () -> Unit,
-    onNavigateToPayments: () -> Unit,
     onNavigateToExchange: () -> Unit
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -146,28 +147,26 @@ fun DashboardScreen(
                     LoadingCard()
                 } else {
                     BalanceCard(
-                        totalBalance = state.totalBalance,
-                        currency = state.primaryCurrency,
-                        accountCount = state.accounts.size,
-                        accounts = state.accounts
+                        totalBalanceRsd = state.totalBalanceRsd,
+                        accounts = state.accounts,
+                        exchangeRates = state.exchangeRates
                     )
                 }
             }
 
-            // Section 2: Quick Actions
+            // Section 2: Verification Card
             Box(modifier = Modifier.staggerEntrance(stagger[2].value)) {
-                QuickActionsRow(
-                    onTransfer = onNavigateToTransfers,
-                    onPayment = onNavigateToPayments,
-                    onExchange = onNavigateToExchange
-                )
-            }
-
-            // Section 3: Verification Card
-            Box(modifier = Modifier.staggerEntrance(stagger[3].value)) {
                 VerificationCard(
                     onClick = onNavigateToVerification,
                     activeCount = state.activeVerificationCount
+                )
+            }
+
+            // Section 3: Exchange Rates Card
+            Box(modifier = Modifier.staggerEntrance(stagger[3].value)) {
+                ExchangeRatesCard(
+                    rates = state.exchangeRates,
+                    onClick = onNavigateToExchange
                 )
             }
 
@@ -201,30 +200,35 @@ private fun GreetingHeader(clientName: String) {
 
 // --- Balance Card ---
 
+private val chartBarColors = listOf(
+    Color(0xFF4285F4),
+    Color(0xFF34A853),
+    Color(0xFFFBBC04),
+    Color(0xFFEA4335),
+    Color(0xFF9C27B0),
+    Color(0xFF00ACC1),
+)
+
 @Composable
 private fun BalanceCard(
-    totalBalance: Double,
-    currency: String,
-    accountCount: Int,
-    accounts: List<AccountDetailsResponseDto>
+    totalBalanceRsd: Double,
+    accounts: List<AccountDetailsResponseDto>,
+    exchangeRates: List<ExchangeRateDto>
 ) {
+    val rateMap = remember(exchangeRates) {
+        exchangeRates.associate { (it.currencyCode ?: "") to (it.sellingRate ?: 1.0) }
+    }
     val dailySpending = accounts.sumOf { it.dailySpending ?: 0.0 }
     val dailyLimit = accounts.sumOf { it.dailyLimit ?: 0.0 }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(20.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     imageVector = Icons.Default.Wallet,
                     contentDescription = null,
@@ -241,18 +245,21 @@ private fun BalanceCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            val formatter = NumberFormat.getNumberInstance(Locale("sr", "RS")).apply {
-                minimumFractionDigits = 2
-                maximumFractionDigits = 2
+            val formatter = remember {
+                NumberFormat.getNumberInstance(Locale("sr", "RS")).apply {
+                    minimumFractionDigits = 2
+                    maximumFractionDigits = 2
+                }
             }
             Text(
-                text = "${formatter.format(totalBalance)} $currency",
+                text = "${formatter.format(totalBalanceRsd)} RSD",
                 style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
                 color = MaterialTheme.colorScheme.onSurface
             )
 
             Spacer(modifier = Modifier.height(4.dp))
 
+            val accountCount = accounts.size
             Text(
                 text = if (accountCount == 1) "1 racun" else "$accountCount racuna",
                 style = MaterialTheme.typography.bodySmall,
@@ -265,100 +272,39 @@ private fun BalanceCard(
                     label = "Dnevna potrosnja",
                     spent = dailySpending,
                     limit = dailyLimit,
-                    currency = currency
+                    currency = "RSD"
                 )
             }
 
-            // Account balance chart
             if (accounts.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(16.dp))
                 AccountBalanceChart(
                     accounts = accounts,
-                    totalBalance = totalBalance,
-                    currency = currency
+                    totalBalanceRsd = totalBalanceRsd,
+                    rateMap = rateMap
                 )
             }
         }
-    }
-}
-
-// --- Spending Indicator ---
-
-@Composable
-private fun SpendingIndicator(
-    label: String,
-    spent: Double,
-    limit: Double,
-    currency: String
-) {
-    val progress = if (limit > 0) (spent / limit).toFloat().coerceIn(0f, 1f) else 0f
-    val animatedProgress by animateFloatAsState(
-        targetValue = progress,
-        animationSpec = tween(durationMillis = 800),
-        label = "spending_progress"
-    )
-
-    val formatter = NumberFormat.getNumberInstance(Locale("sr", "RS")).apply {
-        minimumFractionDigits = 0
-        maximumFractionDigits = 0
-    }
-
-    Column {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = "${formatter.format(spent)} / ${formatter.format(limit)} $currency",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        Spacer(modifier = Modifier.height(6.dp))
-        LinearProgressIndicator(
-            progress = { animatedProgress },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(6.dp)
-                .clip(CircleShape),
-            color = if (progress > 0.8f) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-            trackColor = MaterialTheme.colorScheme.outlineVariant,
-            strokeCap = StrokeCap.Round
-        )
     }
 }
 
 // --- Account Balance Chart ---
 
-private val chartBarColors = listOf(
-    Color(0xFF4285F4), // Blue
-    Color(0xFF34A853), // Green
-    Color(0xFFFBBC04), // Yellow
-    Color(0xFFEA4335), // Red
-    Color(0xFF9C27B0), // Purple
-    Color(0xFF00ACC1), // Cyan
-)
-
 @Composable
 private fun AccountBalanceChart(
     accounts: List<AccountDetailsResponseDto>,
-    totalBalance: Double,
-    currency: String
+    totalBalanceRsd: Double,
+    rateMap: Map<String, Double>
 ) {
     val animProgress = remember { Animatable(0f) }
     LaunchedEffect(Unit) {
         animProgress.animateTo(
             1f,
-            animationSpec = tween(durationMillis = 700, easing = FastOutSlowInEasing)
+            animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing)
         )
     }
 
-    val formatter = remember {
+    val compactFormatter = remember {
         NumberFormat.getNumberInstance(Locale("sr", "RS")).apply {
             minimumFractionDigits = 0
             maximumFractionDigits = 0
@@ -376,8 +322,8 @@ private fun AccountBalanceChart(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
-        // Stacked horizontal bar showing proportions
-        if (totalBalance > 0) {
+        // Stacked bar
+        if (totalBalanceRsd > 0) {
             val barColors = sortedAccounts.mapIndexed { i, _ ->
                 chartBarColors[i % chartBarColors.size]
             }
@@ -393,7 +339,6 @@ private fun AccountBalanceChart(
                 val barHeight = size.height
                 val cornerRadius = CornerRadius(7.dp.toPx())
 
-                // Draw track
                 drawRoundRect(
                     color = Color.LightGray.copy(alpha = 0.15f),
                     size = Size(size.width, barHeight),
@@ -401,8 +346,8 @@ private fun AccountBalanceChart(
                 )
 
                 sortedAccounts.forEachIndexed { index, account ->
-                    val balance = account.raspolozivoStanje ?: 0.0
-                    val fraction = (balance / totalBalance).toFloat()
+                    val balanceRsd = accountBalanceInRsd(account, rateMap)
+                    val fraction = (balanceRsd / totalBalanceRsd).toFloat()
                     val segmentWidth = fraction * totalWidth
 
                     if (segmentWidth > 0f) {
@@ -421,16 +366,16 @@ private fun AccountBalanceChart(
         sortedAccounts.forEachIndexed { index, account ->
             val balance = account.raspolozivoStanje ?: 0.0
             val reserved = account.rezervisanaSredstva ?: 0.0
-            val pct = if (totalBalance > 0) (balance / totalBalance * 100).toInt() else 0
+            val balanceRsd = accountBalanceInRsd(account, rateMap)
+            val pct = if (totalBalanceRsd > 0) (balanceRsd / totalBalanceRsd * 100).toInt() else 0
             val color = chartBarColors[index % chartBarColors.size]
-            val acctCurrency = account.currency ?: currency
+            val acctCurrency = account.currency ?: "RSD"
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Color dot
                 Box(
                     modifier = Modifier
                         .size(10.dp)
@@ -438,7 +383,6 @@ private fun AccountBalanceChart(
                         .background(color)
                 )
 
-                // Account name
                 Text(
                     text = account.nazivRacuna ?: account.brojRacuna ?: "Racun ${index + 1}",
                     style = MaterialTheme.typography.bodySmall,
@@ -448,23 +392,21 @@ private fun AccountBalanceChart(
                     modifier = Modifier.weight(1f)
                 )
 
-                // Balance + percentage
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
-                        text = "${formatter.format(balance)} $acctCurrency",
+                        text = "${compactFormatter.format(balance)} $acctCurrency",
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     if (reserved > 0) {
                         Text(
-                            text = "Rezervisano: ${formatter.format(reserved)}",
+                            text = "Rezervisano: ${compactFormatter.format(reserved)}",
                             style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                         )
                     }
                 }
 
-                // Percentage badge
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(4.dp))
@@ -485,68 +427,59 @@ private fun AccountBalanceChart(
     }
 }
 
-// --- Quick Actions Row ---
-
-@Composable
-private fun QuickActionsRow(
-    onTransfer: () -> Unit,
-    onPayment: () -> Unit,
-    onExchange: () -> Unit
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceEvenly
-    ) {
-        QuickActionButton(
-            icon = Icons.Default.SwapHoriz,
-            label = "Transfer",
-            onClick = onTransfer
-        )
-        QuickActionButton(
-            icon = Icons.Default.Payment,
-            label = "Placanje",
-            onClick = onPayment
-        )
-        QuickActionButton(
-            icon = Icons.Default.CurrencyExchange,
-            label = "Menjacnica",
-            onClick = onExchange
-        )
-    }
+private fun accountBalanceInRsd(
+    account: AccountDetailsResponseDto,
+    rateMap: Map<String, Double>
+): Double {
+    val balance = account.raspolozivoStanje ?: 0.0
+    val currency = account.currency ?: "RSD"
+    return if (currency == "RSD") balance else balance * (rateMap[currency] ?: 1.0)
 }
 
+// --- Spending Indicator ---
+
 @Composable
-private fun QuickActionButton(
-    icon: ImageVector,
+private fun SpendingIndicator(
     label: String,
-    onClick: () -> Unit
+    spent: Double,
+    limit: Double,
+    currency: String
 ) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .clip(RoundedCornerShape(12.dp))
-            .clickable { onClick() }
-            .padding(12.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(52.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
-            contentAlignment = Alignment.Center
+    val progress = if (limit > 0) (spent / limit).toFloat().coerceIn(0f, 1f) else 0f
+    val animatedProgress by animateFloatAsState(
+        targetValue = progress,
+        animationSpec = tween(durationMillis = 800),
+        label = "spending_progress"
+    )
+    val formatter = remember {
+        NumberFormat.getNumberInstance(Locale("sr", "RS")).apply {
+            minimumFractionDigits = 0
+            maximumFractionDigits = 0
+        }
+    }
+
+    Column {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = label,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(24.dp)
+            Text(text = label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                text = "${formatter.format(spent)} / ${formatter.format(limit)} $currency",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
         Spacer(modifier = Modifier.height(6.dp))
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+        LinearProgressIndicator(
+            progress = { animatedProgress },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(6.dp)
+                .clip(CircleShape),
+            color = if (progress > 0.8f) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+            trackColor = MaterialTheme.colorScheme.outlineVariant,
+            strokeCap = StrokeCap.Round
         )
     }
 }
@@ -560,9 +493,7 @@ private fun VerificationCard(onClick: () -> Unit, activeCount: Int = 0) {
             .fillMaxWidth()
             .clickable { onClick() },
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
@@ -602,7 +533,6 @@ private fun VerificationCard(onClick: () -> Unit, activeCount: Int = 0) {
                 )
             }
 
-            // Notification badge
             if (activeCount > 0) {
                 Box(
                     modifier = Modifier
@@ -632,6 +562,151 @@ private fun VerificationCard(onClick: () -> Unit, activeCount: Int = 0) {
     }
 }
 
+// --- Exchange Rates Card ---
+
+private val highlightCurrencies = listOf("EUR", "USD", "CHF", "GBP")
+
+@Composable
+private fun ExchangeRatesCard(
+    rates: List<ExchangeRateDto>,
+    onClick: () -> Unit
+) {
+    val displayRates = remember(rates) {
+        rates.filter { it.currencyCode in highlightCurrencies && it.currencyCode != "RSD" }
+            .take(4)
+    }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFF00897B).copy(alpha = 0.12f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CurrencyExchange,
+                        contentDescription = null,
+                        tint = Color(0xFF00897B),
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Kursna lista",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = if (displayRates.isNotEmpty()) "Danas" else "Ucitavanje...",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.TrendingUp,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.outlineVariant,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
+            if (displayRates.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Header
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Valuta",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.width(52.dp)
+                    )
+                    Text(
+                        text = "Kupovni",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "Prodajni",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                val rateFormatter = remember {
+                    NumberFormat.getNumberInstance(Locale("sr", "RS")).apply {
+                        minimumFractionDigits = 2
+                        maximumFractionDigits = 4
+                    }
+                }
+
+                displayRates.forEach { rate ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                            .padding(horizontal = 8.dp, vertical = 10.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = rate.currencyCode ?: "",
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.width(44.dp)
+                        )
+                        Text(
+                            text = rateFormatter.format(rate.buyingRate ?: 0.0),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = rateFormatter.format(rate.sellingRate ?: 0.0),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Prikazite sve kurseve →",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.align(Alignment.End)
+                )
+            }
+        }
+    }
+}
+
 // --- Loading Card ---
 
 @Composable
@@ -641,9 +716,7 @@ private fun LoadingCard() {
             .fillMaxWidth()
             .height(180.dp),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Box(
             modifier = Modifier.fillMaxSize(),

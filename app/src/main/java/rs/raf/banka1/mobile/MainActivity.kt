@@ -57,10 +57,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // fixme testing purposes
-        runBlocking { Log.d("MainActivity", "JWT TOKEN IS ${userPreferencesRepository.readAuthToken().firstOrNull()}") }
-
-
         splashScreen.setKeepOnScreenCondition {
             viewModel.state.value is SplashViewModel.SplashUiState.Loading
         }
@@ -121,7 +117,7 @@ class MainActivity : ComponentActivity() {
 
     private fun syncFcmToken() {
         FirebaseMessaging.getInstance().token.addOnSuccessListener { token ->
-            Log.d("MainActivity", "FCM token: $token")
+            Log.d("DEBUG", "FCM token: $token")
             appScope.launch {
                 userPreferencesRepository.saveFcmToken(token)
                 try {

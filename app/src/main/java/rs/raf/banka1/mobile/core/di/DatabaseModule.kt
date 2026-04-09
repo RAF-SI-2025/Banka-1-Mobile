@@ -8,6 +8,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import rs.raf.banka1.mobile.data.local.BankaDatabase
+import rs.raf.banka1.mobile.data.local.ExchangeRateDao
 import rs.raf.banka1.mobile.data.local.VerificationCodeDao
 import javax.inject.Singleton
 
@@ -22,12 +23,18 @@ object DatabaseModule {
             context,
             BankaDatabase::class.java,
             "banka1_db"
-        ).build()
+        ).fallbackToDestructiveMigration(true).build()
     }
 
     @Singleton
     @Provides
     fun provideVerificationCodeDao(database: BankaDatabase): VerificationCodeDao {
         return database.verificationCodeDao()
+    }
+
+    @Singleton
+    @Provides
+    fun provideExchangeRateDao(database: BankaDatabase): ExchangeRateDao {
+        return database.exchangeRateDao()
     }
 }

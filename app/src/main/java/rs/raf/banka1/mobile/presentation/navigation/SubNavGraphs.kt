@@ -1,11 +1,15 @@
 package rs.raf.banka1.mobile.presentation.navigation
 
+import android.net.Uri
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.navigation
 import androidx.navigation.toRoute
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import rs.raf.banka1.mobile.data.remote.responses.TransactionResponseDto
 import rs.raf.banka1.mobile.presentation.screens.accounts.AccountDetailScreen
 import rs.raf.banka1.mobile.presentation.screens.accounts.AccountsCardsScreen
 import rs.raf.banka1.mobile.presentation.screens.auth.EmailSentScreen
@@ -14,6 +18,9 @@ import rs.raf.banka1.mobile.presentation.screens.auth.LoginScreen
 import rs.raf.banka1.mobile.presentation.screens.cards.CardDetailScreen
 import rs.raf.banka1.mobile.presentation.screens.dashboard.DashboardScreen
 import rs.raf.banka1.mobile.presentation.screens.exchange.ExchangeScreen
+import rs.raf.banka1.mobile.presentation.screens.history.HistoryScreen
+import rs.raf.banka1.mobile.presentation.screens.history.TransactionDetailScreen
+import rs.raf.banka1.mobile.presentation.screens.history.TransferDetailScreen
 import rs.raf.banka1.mobile.presentation.screens.main.VerificationScreen
 import rs.raf.banka1.mobile.presentation.screens.profile.ProfileScreen
 
@@ -135,7 +142,45 @@ fun NavGraphBuilder.mainNavGraph(navController: NavController) {
         }
 
         composable<Routes.MainFlow.History> {
-            // TODO: HistoryScreen
+            HistoryScreen(
+                viewModel = hiltViewModel(),
+                onNavigateToTransferDetail = { orderNumber, fromCurrency, toCurrency ->
+                    navController.navigate(
+                        Routes.MainFlow.TransferDetail(orderNumber, fromCurrency, toCurrency)
+                    ) {
+                        launchSingleTop = true
+                    }
+                },
+                onNavigateToTransactionDetail = { transaction ->
+                    // Create a Moshi instance (or use Gson().toJson(transaction))
+                    val moshi = Moshi.Builder()
+                        .add(KotlinJsonAdapterFactory())
+                        .build()
+
+                    val json = moshi.adapter(TransactionResponseDto::class.java).toJson(transaction)
+
+                    // Encode the JSON to be safe for URI paths
+                    val encodedJson = Uri.encode(json)
+
+                    navController.navigate(Routes.MainFlow.TransactionDetail(encodedJson)) {
+                        launchSingleTop = true
+                    }
+                }
+            )
+        }
+
+        composable<Routes.MainFlow.TransferDetail> {
+            TransferDetailScreen(
+                viewModel = hiltViewModel(),
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable<Routes.MainFlow.TransactionDetail> {
+            TransactionDetailScreen(
+                viewModel = hiltViewModel(),
+                onNavigateBack = { navController.popBackStack() }
+            )
         }
 
         composable<Routes.MainFlow.Exchange> {

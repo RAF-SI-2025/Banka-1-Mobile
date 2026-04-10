@@ -22,4 +22,16 @@ interface TransactionApi {
         @Query("page") page: Int = 0,
         @Query("size") size: Int = 10
     ): NetworkResult<PageResponse<TransactionResponseDto>>
+
+    @GET("transactions/")
+    suspend fun getTransactions(
+        @Query("clientId") clientId: Long,
+        @Query("page") page: Int = 0,
+        @Query("size") size: Int = 20
+    ): NetworkResult<PageResponse<TransactionResponseDto>>
+
+    @GET("transactions/{orderNumber}")
+    suspend fun getTransactionByOrderNumber(
+        @Path("orderNumber") orderNumber: String
+    ): NetworkResult<TransactionResponseDto>
 }

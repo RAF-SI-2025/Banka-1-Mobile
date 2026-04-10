@@ -76,7 +76,9 @@ fun StaggeredAnimItem(
 
 
 @Composable
-fun AbstractEmailArt() {
+fun AbstractEmailArt(
+    accentColor: Color = MaterialTheme.colorScheme.primaryContainer
+) {
     val infiniteTransition = rememberInfiniteTransition(label = "art_anim")
 
     // 1. Pulsing scale for the center circle
@@ -121,7 +123,7 @@ fun AbstractEmailArt() {
             modifier = Modifier
                 .size(100.dp)
                 .clip(RoundedCornerShape(32.dp))
-                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f))
+                .background(accentColor.copy(alpha = 0.12f))
         )
 
         // Animated pulsing circle (Perfectly centered)
@@ -130,14 +132,14 @@ fun AbstractEmailArt() {
                 .size(70.dp)
                 .scale(circleScale)
                 .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = circleAlpha))
+                .background(accentColor.copy(alpha = circleAlpha))
         )
 
         // Floating email icon
         Icon(
             imageVector = Icons.Rounded.Email,
             contentDescription = null,
-            tint = MaterialTheme.colorScheme.primaryContainer,
+            tint = accentColor,
             modifier = Modifier
                 .size(48.dp)
                 .offset(y = iconOffset.dp)

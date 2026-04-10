@@ -1,11 +1,9 @@
 package rs.raf.banka1.mobile.presentation.screens.accounts
 
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -196,53 +194,59 @@ fun AccountsCardsScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Content
-        if (state.isLoading) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(32.dp),
-                    strokeWidth = 3.dp,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-        } else {
-            AnimatedVisibility(
-                visible = state.selectedTab == AccountsCardsTab.ACCOUNTS,
-                enter = fadeIn(tween(200)),
-                exit = fadeOut(tween(200))
-            ) {
-                if (state.accounts.isEmpty()) {
-                    EmptyState("Nemate otvorene racune")
-                } else {
-                    AccountsList(
-                        accounts = state.accounts,
-                        onAccountClick = { accountNumber -> onNavigateToAccountDetail(accountNumber) }
+        val screenState = when {
+            state.isLoading -> AccountsCardsScreenState.Loading
+            state.selectedTab == AccountsCardsTab.ACCOUNTS -> AccountsCardsScreenState.Accounts
+            else -> AccountsCardsScreenState.Cards
+        }
+
+        Crossfade(
+            targetState = screenState,
+            animationSpec = tween(durationMillis = 220),
+            modifier = Modifier.fillMaxSize(),
+            label = "accounts_cards_content"
+        ) { target ->
+            when (target) {
+                AccountsCardsScreenState.Loading -> Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(32.dp),
+                        strokeWidth = 3.dp,
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
-            }
 
-            AnimatedVisibility(
-                visible = state.selectedTab == AccountsCardsTab.CARDS,
-                enter = fadeIn(tween(200)),
-                exit = fadeOut(tween(200))
-            ) {
-                if (state.cards.isEmpty()) {
-                    EmptyState("Nemate izdate kartice")
-                } else {
-                    CardsList(
-                        cards = state.cards,
-                        onCardClick = { accountNumber, cardNumber ->
-                            onNavigateToCardDetail(accountNumber, cardNumber)
-                        }
-                    )
+                AccountsCardsScreenState.Accounts -> {
+                    if (state.accounts.isEmpty()) {
+                        EmptyState("Nemate otvorene racune")
+                    } else {
+                        AccountsList(
+                            accounts = state.accounts,
+                            onAccountClick = { accountNumber -> onNavigateToAccountDetail(accountNumber) }
+                        )
+                    }
+                }
+
+                AccountsCardsScreenState.Cards -> {
+                    if (state.cards.isEmpty()) {
+                        EmptyState("Nemate izdate kartice")
+                    } else {
+                        CardsList(
+                            cards = state.cards,
+                            onCardClick = { accountNumber, cardNumber ->
+                                onNavigateToCardDetail(accountNumber, cardNumber)
+                            }
+                        )
+                    }
                 }
             }
         }
     }
 }
+
+private enum class AccountsCardsScreenState { Loading, Accounts, Cards }
 
 // --- Accounts List ---
 

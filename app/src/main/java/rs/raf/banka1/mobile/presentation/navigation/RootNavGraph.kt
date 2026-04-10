@@ -17,12 +17,17 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.MutableFloatState
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -34,6 +39,15 @@ import rs.raf.banka1.mobile.data.repository.UserPreferencesRepository
 import rs.raf.banka1.mobile.presentation.components.BankaSideMenuLayout
 import rs.raf.banka1.mobile.presentation.components.DrawerMenuItem
 import rs.raf.banka1.mobile.presentation.components.SideMenuState
+
+/**
+ * Shared scroll progress (0f..1f) that the dashboard publishes as the user scrolls
+ * past the greeting header, so the top bar title can fade between "Pocetna" and the
+ * client's full name without the dashboard having to own the top bar.
+ */
+val LocalDashboardTopBarProgress = compositionLocalOf<MutableFloatState> {
+    error("LocalDashboardTopBarProgress not provided")
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -86,6 +100,12 @@ fun RootNavGraph(
         } ?: kotlinx.coroutines.flow.flowOf(SideMenuState.Loading)
     }.collectAsState(initial = SideMenuState.Loading)
 
+    val dashboardScrollProgress = remember { mutableFloatStateOf(0f) }
+    val clientFullName = (sideMenuState as? SideMenuState.Content)
+        ?.let { "${it.clientData.name} ${it.clientData.lastName}".trim() }
+        ?.takeIf { it.isNotBlank() }
+    val isOnDashboard = selectedDrawerItem == DrawerMenuItem.DASHBOARD
+
     if (isInMainFlow) {
         ModalNavigationDrawer(
             drawerState = drawerState,
@@ -106,7 +126,37 @@ fun RootNavGraph(
             Scaffold(
                 topBar = {
                     TopAppBar(
-                        title = { Text(selectedDrawerItem?.label ?: "Banka 1") },
+                        title = {
+                            val defaultLabel = selectedDrawerItem?.label ?: "Banka 1"
+                            if (isOnDashboard && clientFullName != null) {
+                                val progress = dashboardScrollProgress.floatValue
+
+                                // Fades OUT "Početna" during the first 40% of the scroll progress
+                                val titleAlpha = (1f - (progress / 0.4f)).coerceIn(0f, 1f)
+
+                                // Fades IN the Name during the last 40% of the scroll progress
+                                // (Leaving a clean 20% gap in the middle where neither is visible)
+                                val nameAlpha = ((progress - 0.6f) / 0.4f).coerceIn(0f, 1f)
+
+                                Box {
+                                    // Only draw them if they are actually visible to save composition power
+                                    if (titleAlpha > 0f) {
+                                        Text(
+                                            text = defaultLabel,
+                                            modifier = Modifier.alpha(titleAlpha)
+                                        )
+                                    }
+                                    if (nameAlpha > 0f) {
+                                        Text(
+                                            text = clientFullName,
+                                            modifier = Modifier.alpha(nameAlpha)
+                                        )
+                                    }
+                                }
+                            } else {
+                                Text(defaultLabel)
+                            }
+                        },
                         navigationIcon = {
                             IconButton(onClick = { scope.launch { drawerState.open() } }) {
                                 Icon(Icons.Default.Menu, contentDescription = "Meni")
@@ -125,12 +175,16 @@ fun RootNavGraph(
                         .fillMaxSize()
                         .padding(padding)
                 ) {
-                    NavHost(
-                        navController = navController,
-                        startDestination = startDestination
+                    CompositionLocalProvider(
+                        LocalDashboardTopBarProgress provides dashboardScrollProgress
                     ) {
-                        authNavGraph(navController)
-                        mainNavGraph(navController)
+                        NavHost(
+                            navController = navController,
+                            startDestination = startDestination
+                        ) {
+                            authNavGraph(navController)
+                            mainNavGraph(navController)
+                        }
                     }
                 }
             }

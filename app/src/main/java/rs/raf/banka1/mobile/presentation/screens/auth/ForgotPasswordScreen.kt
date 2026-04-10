@@ -121,7 +121,7 @@ fun ForgotPasswordScreen(
 
                 StaggeredAnimItem(delayMillis = 150) {
                     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        AbstractEmailArt()
+                        AbstractEmailArt(accentColor = authAccentColor())
                     }
                 }
 

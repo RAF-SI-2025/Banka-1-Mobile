@@ -120,7 +120,7 @@ fun LoginScreen(
                             Text(
                                 text = "Dobro došli",
                                 style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-                                color = MaterialTheme.colorScheme.primaryContainer
+                                color = authAccentColor()
                             )
                             Text(
                                 text = "Brzo, lako i sigurno",
@@ -176,7 +176,7 @@ fun LoginScreen(
                             TextButton(onClick = onNavigateToForgotPassword) {
                                 Text(
                                     text = "Zaboravili ste lozinku?",
-                                    color = MaterialTheme.colorScheme.primaryContainer,
+                                    color = authAccentColor(),
                                     fontWeight = FontWeight.SemiBold
                                 )
                             }
@@ -218,7 +218,7 @@ fun LoginScreen(
                             Icon(
                                 imageVector = Icons.Rounded.Fingerprint,
                                 contentDescription = "Biometric Login",
-                                tint = MaterialTheme.colorScheme.primaryContainer,
+                                tint = authAccentColor(),
                                 modifier = Modifier.fillMaxSize()
                             )
                         }
@@ -258,7 +258,7 @@ fun AnimatedLockIllustration() {
         Icon(
             imageVector = Icons.Rounded.Lock,
             contentDescription = "Lock",
-            tint = MaterialTheme.colorScheme.primaryContainer,
+            tint = authAccentColor(),
             modifier = Modifier
                 .size(48.dp)
                 .offset(y = offsetY.dp)

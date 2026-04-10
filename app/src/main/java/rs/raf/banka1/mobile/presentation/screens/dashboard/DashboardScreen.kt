@@ -36,13 +36,18 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -55,9 +60,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.distinctUntilChanged
 import rs.raf.banka1.mobile.data.remote.responses.AccountDetailsResponseDto
 import rs.raf.banka1.mobile.data.remote.responses.ExchangeRateDto
 import rs.raf.banka1.mobile.presentation.components.ErrorDialog
+import rs.raf.banka1.mobile.presentation.navigation.LocalDashboardTopBarProgress
 import rs.raf.banka1.mobile.presentation.viewmodels.main.DashboardContract
 import rs.raf.banka1.mobile.presentation.viewmodels.main.DashboardViewModel
 import java.text.NumberFormat
@@ -125,14 +132,36 @@ fun DashboardScreen(
         }
     }
 
+    val scrollState = rememberScrollState()
+    val topBarProgress = LocalDashboardTopBarProgress.current
+    var greetingHeightPx by remember { mutableIntStateOf(0) }
+
+    LaunchedEffect(scrollState, greetingHeightPx) {
+        snapshotFlow { scrollState.value }
+            .distinctUntilChanged()
+            .collect { scroll ->
+                val fadeDistance = (greetingHeightPx * 0.8f).coerceAtLeast(1f)
+
+                topBarProgress.floatValue = (scroll.toFloat() / fadeDistance).coerceIn(0f, 1f)
+            }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose { topBarProgress.floatValue = 0f }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(scrollState)
     ) {
         // Section 0: Greeting Header
-        Box(modifier = Modifier.staggerEntrance(stagger[0].value)) {
+        Box(
+            modifier = Modifier
+                .onSizeChanged { greetingHeightPx = it.height }
+                .staggerEntrance(stagger[0].value)
+        ) {
             GreetingHeader(clientName = state.clientName)
         }
 

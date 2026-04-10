@@ -3,6 +3,7 @@ package rs.raf.banka1.mobile.presentation.screens.history
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -45,6 +46,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -53,7 +55,9 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -90,6 +94,15 @@ fun TransactionDetailScreen(
     onNavigateBack: () -> Unit
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val scrollState = rememberScrollState()
+    val density = LocalDensity.current
+    val titleAlpha by remember {
+        derivedStateOf {
+            val fadeStart = with(density) { 24.dp.toPx() }
+            val fadeEnd = with(density) { 64.dp.toPx() }
+            ((scrollState.value - fadeStart) / (fadeEnd - fadeStart)).coerceIn(0f, 1f)
+        }
+    }
 
     if (state.error != null) {
         ErrorDialog(errorData = state.error) {
@@ -100,7 +113,17 @@ fun TransactionDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { },
+                title = {
+                    if (titleAlpha > 0f) {
+                        Text(
+                            text = "Detalji transakcije",
+                            modifier = Modifier.alpha(titleAlpha),
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
@@ -134,14 +157,20 @@ fun TransactionDetailScreen(
                     )
                 }
             } else if (state.transaction != null) {
-                TransactionDetailContent(transaction = state.transaction!!)
+                TransactionDetailContent(
+                    transaction = state.transaction!!,
+                    scrollState = scrollState
+                )
             }
         }
     }
 }
 
 @Composable
-private fun TransactionDetailContent(transaction: TransactionResponseDto) {
+private fun TransactionDetailContent(
+    transaction: TransactionResponseDto,
+    scrollState: ScrollState
+) {
     val formatter = remember {
         NumberFormat.getNumberInstance(Locale("sr", "RS")).apply {
             minimumFractionDigits = 2
@@ -156,7 +185,7 @@ private fun TransactionDetailContent(transaction: TransactionResponseDto) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(scrollState)
     ) {
         TransactionHeader(
             transaction = transaction,
@@ -297,7 +326,7 @@ private fun TransactionHeader(
             )
             Spacer(modifier = Modifier.width(12.dp))
             Text(
-                text = "Detalji transakcije",
+                text = "Detalji transakcije", //over here
                 style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
                 color = MaterialTheme.colorScheme.onBackground
             )

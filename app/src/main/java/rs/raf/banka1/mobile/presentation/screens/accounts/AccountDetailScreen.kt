@@ -4,6 +4,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -44,6 +45,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -53,7 +55,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -87,6 +91,17 @@ fun AccountDetailScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
+    val scrollState = rememberScrollState()
+    val density = LocalDensity.current
+    val titleAlpha by remember {
+        derivedStateOf {
+            val fadeStart = with(density) { 24.dp.toPx() } // Start fading as it scrolls past top padding
+            val fadeEnd = with(density) { 64.dp.toPx() }   // Fully visible when past the text
+            ((scrollState.value - fadeStart) / (fadeEnd - fadeStart)).coerceIn(0f, 1f)
+        }
+    }
+
+
     if (state.error != null) {
         ErrorDialog(errorData = state.error) {
             viewModel.setEvent(AccountDetailContract.UiEvent.ClearError)
@@ -96,7 +111,17 @@ fun AccountDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { },
+                title = {
+                    if (titleAlpha > 0f) {
+                        Text(
+                            text = state.account?.nazivRacuna ?: "Tekuci racun",
+                            modifier = Modifier.alpha(titleAlpha),
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
@@ -132,7 +157,8 @@ fun AccountDetailScreen(
             } else if (state.account != null) {
                 AccountDetailContent(
                     account = state.account!!,
-                    onNavigateToCardDetail = onNavigateToCardDetail
+                    onNavigateToCardDetail = onNavigateToCardDetail,
+                    scrollState = scrollState
                 )
             }
         }
@@ -142,6 +168,7 @@ fun AccountDetailScreen(
 @Composable
 private fun AccountDetailContent(
     account: AccountDetailsResponseDto,
+    scrollState: ScrollState,
     onNavigateToCardDetail: (String) -> Unit
 ) {
     val formatter = remember {
@@ -157,7 +184,7 @@ private fun AccountDetailContent(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(scrollState)
     ) {
         // Header with balance
         BalanceHeader(account = account, formatter = formatter, currency = currency, isActive = isActive)
@@ -347,7 +374,7 @@ private fun BalanceHeader(
             )
             Spacer(modifier = Modifier.width(12.dp))
             Text(
-                text = account.nazivRacuna ?: "Racun",
+                text = account.nazivRacuna ?: "Racun", // over here
                 style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
                 color = MaterialTheme.colorScheme.onBackground
             )

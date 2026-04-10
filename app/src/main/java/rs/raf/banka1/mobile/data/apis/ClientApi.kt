@@ -7,6 +7,6 @@ import rs.raf.banka1.mobile.data.remote.responses.ClientInfoResponseDto
 
 interface ClientApi {
 
-    @GET("customers/{id}")
+    @GET("clients/customers/{id}")
     suspend fun getClientById(@Path("id") id: Long): NetworkResult<ClientInfoResponseDto>
 }

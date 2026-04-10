@@ -5,6 +5,7 @@ import okio.Timeout
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import rs.raf.banka1.mobile.core.network.managers.AuthSessionManager
 import rs.raf.banka1.mobile.core.util.JsonParser
 import rs.raf.banka1.mobile.data.remote.AppErrorCodes
 import rs.raf.banka1.mobile.data.remote.NetworkResult
@@ -13,7 +14,8 @@ import java.io.IOException
 
 class NetworkResultCall<T : Any>(
     private val proxy: Call<T>,
-    private val jsonParser: JsonParser
+    private val jsonParser: JsonParser,
+    private val authSessionManager: AuthSessionManager
 ) : Call<NetworkResult<T>> {
 
     override fun enqueue(callback: Callback<NetworkResult<T>>) {
@@ -52,6 +54,16 @@ class NetworkResultCall<T : Any>(
             return NetworkResult.Success(body)
         }
 
+        if (response.code() == 401) {
+            // Check if the request was marked as public
+            val isPublicRoute = response.raw().request.header("No-Auth") == "true"
+
+            if (!isPublicRoute) {
+                authSessionManager.triggerForceLogout()
+                return NetworkResult.Ignored()
+            }
+        }
+
         return try {
             val errorBodyString = response.errorBody()?.string()
 
@@ -83,7 +95,7 @@ class NetworkResultCall<T : Any>(
     }
 
     override fun execute(): Response<NetworkResult<T>> = throw UnsupportedOperationException()
-    override fun clone(): Call<NetworkResult<T>> = NetworkResultCall(proxy.clone(), jsonParser)
+    override fun clone(): Call<NetworkResult<T>> = NetworkResultCall(proxy.clone(), jsonParser, authSessionManager)
     override fun request(): Request = proxy.request()
     override fun timeout(): Timeout = proxy.timeout()
     override fun isExecuted(): Boolean = proxy.isExecuted

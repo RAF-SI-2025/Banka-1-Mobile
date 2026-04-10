@@ -3,13 +3,15 @@ package rs.raf.banka1.mobile.core.network.call_adapters
 import retrofit2.Call
 import retrofit2.CallAdapter
 import retrofit2.Retrofit
+import rs.raf.banka1.mobile.core.network.managers.AuthSessionManager
 import rs.raf.banka1.mobile.core.util.JsonParser
 import rs.raf.banka1.mobile.data.remote.NetworkResult
 import java.lang.reflect.ParameterizedType
 import java.lang.reflect.Type
 
 class NetworkResultCallAdapterFactory private constructor(
-    private val jsonParser: JsonParser
+    private val jsonParser: JsonParser,
+    private val authSessionManager: AuthSessionManager
 ) : CallAdapter.Factory() {
 
     override fun get(
@@ -27,11 +29,14 @@ class NetworkResultCallAdapterFactory private constructor(
         }
 
         val resultType = getParameterUpperBound(0, callType as ParameterizedType)
-        return NetworkResultCallAdapter(resultType, jsonParser)
+        return NetworkResultCallAdapter(resultType, jsonParser, authSessionManager)
     }
 
     companion object {
-        fun create(jsonParser: JsonParser): NetworkResultCallAdapterFactory =
-            NetworkResultCallAdapterFactory(jsonParser)
+        fun create(
+            jsonParser: JsonParser,
+            authSessionManager: AuthSessionManager
+        ): NetworkResultCallAdapterFactory =
+            NetworkResultCallAdapterFactory(jsonParser, authSessionManager)
     }
 }

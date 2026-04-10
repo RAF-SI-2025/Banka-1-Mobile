@@ -14,6 +14,7 @@ import retrofit2.converter.scalars.ScalarsConverterFactory
 import rs.raf.banka1.mobile.BuildConfig
 import rs.raf.banka1.mobile.core.network.call_adapters.NetworkResultCallAdapterFactory
 import rs.raf.banka1.mobile.core.network.interceptors.AuthInterceptor
+import rs.raf.banka1.mobile.core.network.managers.AuthSessionManager
 import rs.raf.banka1.mobile.core.util.JsonParser
 import rs.raf.banka1.mobile.data.apis.AccountApi
 import rs.raf.banka1.mobile.data.apis.AuthApi
@@ -68,14 +69,17 @@ object NetworkModule {
     fun provideRetrofit(
         okHttpClient: OkHttpClient,
         moshi: Moshi,
-        jsonParser: JsonParser
+        jsonParser: JsonParser,
+        authSessionManager: AuthSessionManager
     ): Retrofit {
         return Retrofit.Builder()
             .baseUrl(BuildConfig.BASE_URL)
             .client(okHttpClient)
             .addConverterFactory(ScalarsConverterFactory.create())
             .addConverterFactory(MoshiConverterFactory.create(moshi))
-            .addCallAdapterFactory(NetworkResultCallAdapterFactory.create(jsonParser))
+            .addCallAdapterFactory(
+                NetworkResultCallAdapterFactory.create(jsonParser, authSessionManager)
+            )
             .build()
     }
 

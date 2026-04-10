@@ -3,6 +3,7 @@ package rs.raf.banka1.mobile.data.apis
 import retrofit2.Call
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.Headers
 import retrofit2.http.POST
 import retrofit2.http.Query
 import rs.raf.banka1.mobile.data.remote.NetworkResult
@@ -15,6 +16,7 @@ import rs.raf.banka1.mobile.data.remote.responses.LoginResponseDto
 interface AuthApi {
 
     @POST("clients/auth/login")
+    @Headers("No-Auth: true")
     suspend fun login(@Body request: LoginRequestDto): NetworkResult<LoginResponseDto>
 
     @GET("clients/auth/check-activate")

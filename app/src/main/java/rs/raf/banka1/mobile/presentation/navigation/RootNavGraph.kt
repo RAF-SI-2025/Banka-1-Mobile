@@ -10,14 +10,17 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import android.widget.Toast
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableFloatState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.compositionLocalOf
@@ -34,6 +37,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import rs.raf.banka1.mobile.core.network.managers.AuthSessionManager
 import rs.raf.banka1.mobile.data.repository.ClientData
 import rs.raf.banka1.mobile.data.repository.UserPreferencesRepository
 import rs.raf.banka1.mobile.presentation.components.BankaSideMenuLayout
@@ -54,11 +58,26 @@ val LocalDashboardTopBarProgress = compositionLocalOf<MutableFloatState> {
 fun RootNavGraph(
     navController: NavHostController,
     startDestination: Route,
-    userPreferencesRepository: UserPreferencesRepository? = null
+    userPreferencesRepository: UserPreferencesRepository? = null,
+    authSessionManager: AuthSessionManager? = null
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val context = LocalContext.current
+
+    LaunchedEffect(authSessionManager, userPreferencesRepository) {
+        if (authSessionManager == null || userPreferencesRepository == null) return@LaunchedEffect
+        authSessionManager.events.collect {
+            userPreferencesRepository.clearAll()
+            navController.navigate(Routes.AuthGraph) {
+                popUpTo(navController.graph.id) { inclusive = true }
+                launchSingleTop = true
+            }
+            scope.launch { drawerState.close() }
+            Toast.makeText(context, "Sesija je istekla, molimo prijavite se ponovo", Toast.LENGTH_LONG).show()
+        }
+    }
 
     val isInMainFlow by remember {
         derivedStateOf {

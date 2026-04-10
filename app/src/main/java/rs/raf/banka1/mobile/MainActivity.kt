@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import rs.raf.banka1.mobile.core.di.ApplicationScope
+import rs.raf.banka1.mobile.core.network.managers.AuthSessionManager
 import rs.raf.banka1.mobile.data.apis.NotificationApi
 import rs.raf.banka1.mobile.data.remote.requests.FcmTokenRequest
 import rs.raf.banka1.mobile.data.repository.UserPreferencesRepository
@@ -47,6 +48,9 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var notificationApi: NotificationApi
+
+    @Inject
+    lateinit var authSessionManager: AuthSessionManager
 
     @Inject
     @ApplicationScope
@@ -101,7 +105,8 @@ class MainActivity : ComponentActivity() {
                             RootNavGraph(
                                 navController = navController,
                                 startDestination = state.destination,
-                                userPreferencesRepository = userPreferencesRepository
+                                userPreferencesRepository = userPreferencesRepository,
+                                authSessionManager = authSessionManager
                             )
                         }
                     }

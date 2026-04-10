@@ -15,6 +15,7 @@ import rs.raf.banka1.mobile.presentation.screens.cards.CardDetailScreen
 import rs.raf.banka1.mobile.presentation.screens.dashboard.DashboardScreen
 import rs.raf.banka1.mobile.presentation.screens.exchange.ExchangeScreen
 import rs.raf.banka1.mobile.presentation.screens.main.VerificationScreen
+import rs.raf.banka1.mobile.presentation.screens.profile.ProfileScreen
 
 fun NavGraphBuilder.authNavGraph(navController: NavController) {
     navigation<Routes.AuthGraph>(startDestination = Routes.AuthFlow.Login) {
@@ -152,7 +153,15 @@ fun NavGraphBuilder.mainNavGraph(navController: NavController) {
         }
 
         composable<Routes.MainFlow.Profile> {
-            // TODO: ProfileScreen
+            ProfileScreen(
+                viewModel = hiltViewModel(),
+                onNavigateToLogin = {
+                    navController.navigate(Routes.AuthGraph) {
+                        popUpTo(navController.graph.id) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
+            )
         }
     }
 }

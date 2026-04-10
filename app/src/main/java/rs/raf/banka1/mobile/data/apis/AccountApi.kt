@@ -19,4 +19,9 @@ interface AccountApi {
     suspend fun getAccountDetails(
         @Path("id") accountId: Long
     ): NetworkResult<AccountDetailsResponseDto>
+
+    @GET("accounts/client/api/accounts/{accountNumber}")
+    suspend fun getAccountDetailsByNumber(
+        @Path("accountNumber") accountNumber: String
+    ): NetworkResult<AccountDetailsResponseDto>
 }

@@ -104,7 +104,8 @@ private fun Modifier.staggerEntrance(progress: Float): Modifier {
 fun DashboardScreen(
     viewModel: DashboardViewModel,
     onNavigateToVerification: () -> Unit,
-    onNavigateToExchange: () -> Unit
+    onNavigateToExchange: () -> Unit,
+    onNavigateToAccounts: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val onEvent = viewModel::setEvent
@@ -149,7 +150,8 @@ fun DashboardScreen(
                     BalanceCard(
                         totalBalanceRsd = state.totalBalanceRsd,
                         accounts = state.accounts,
-                        exchangeRates = state.exchangeRates
+                        exchangeRates = state.exchangeRates,
+                        onClick = onNavigateToAccounts
                     )
                 }
             }
@@ -213,7 +215,8 @@ private val chartBarColors = listOf(
 private fun BalanceCard(
     totalBalanceRsd: Double,
     accounts: List<AccountDetailsResponseDto>,
-    exchangeRates: List<ExchangeRateDto>
+    exchangeRates: List<ExchangeRateDto>,
+    onClick: () -> Unit = {}
 ) {
     val rateMap = remember(exchangeRates) {
         exchangeRates.associate { (it.currencyCode ?: "") to (it.sellingRate ?: 1.0) }
@@ -222,7 +225,9 @@ private fun BalanceCard(
     val dailyLimit = accounts.sumOf { it.dailyLimit ?: 0.0 }
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)

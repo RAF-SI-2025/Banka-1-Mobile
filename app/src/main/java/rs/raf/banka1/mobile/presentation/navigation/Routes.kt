@@ -29,10 +29,10 @@ object Routes {
         data object Accounts : MainFlow
 
         @Serializable
-        data class AccountDetail(val accountId: Long) : MainFlow
+        data class AccountDetail(val accountNumber: String) : MainFlow
 
         @Serializable
-        data class CardDetail(val cardNumber: String) : MainFlow
+        data class CardDetail(val accountNumber: String, val cardNumber: String) : MainFlow
 
         @Serializable
         data object Transfers : MainFlow

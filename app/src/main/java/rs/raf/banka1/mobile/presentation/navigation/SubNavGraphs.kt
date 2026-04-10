@@ -6,9 +6,12 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.navigation
 import androidx.navigation.toRoute
+import rs.raf.banka1.mobile.presentation.screens.accounts.AccountDetailScreen
+import rs.raf.banka1.mobile.presentation.screens.accounts.AccountsCardsScreen
 import rs.raf.banka1.mobile.presentation.screens.auth.EmailSentScreen
 import rs.raf.banka1.mobile.presentation.screens.auth.ForgotPasswordScreen
 import rs.raf.banka1.mobile.presentation.screens.auth.LoginScreen
+import rs.raf.banka1.mobile.presentation.screens.cards.CardDetailScreen
 import rs.raf.banka1.mobile.presentation.screens.dashboard.DashboardScreen
 import rs.raf.banka1.mobile.presentation.screens.exchange.ExchangeScreen
 import rs.raf.banka1.mobile.presentation.screens.main.VerificationScreen
@@ -70,20 +73,56 @@ fun NavGraphBuilder.mainNavGraph(navController: NavController) {
                     navController.navigate(Routes.MainFlow.Exchange) {
                         launchSingleTop = true
                     }
+                },
+                onNavigateToAccounts = {
+                    navController.navigate(Routes.MainFlow.Accounts) {
+                        launchSingleTop = true
+                    }
                 }
             )
         }
 
         composable<Routes.MainFlow.Accounts> {
-            // TODO: AccountsListScreen
+            AccountsCardsScreen(
+                viewModel = hiltViewModel(),
+                onNavigateToAccountDetail = { accountNumber ->
+                    navController.navigate(Routes.MainFlow.AccountDetail(accountNumber)) {
+                        launchSingleTop = true
+                    }
+                },
+                onNavigateToCardDetail = { accountNumber, cardNumber ->
+                    navController.navigate(
+                        Routes.MainFlow.CardDetail(accountNumber, cardNumber)
+                    ) {
+                        launchSingleTop = true
+                    }
+                }
+            )
         }
 
         composable<Routes.MainFlow.AccountDetail> {
-            // TODO: AccountDetailScreen
+            AccountDetailScreen(
+                viewModel = hiltViewModel(),
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToCardDetail = { cardNumber ->
+                    val route = it.toRoute<Routes.MainFlow.AccountDetail>()
+                    navController.navigate(
+                        Routes.MainFlow.CardDetail(
+                            accountNumber = route.accountNumber,
+                            cardNumber = cardNumber
+                        )
+                    ) {
+                        launchSingleTop = true
+                    }
+                }
+            )
         }
 
         composable<Routes.MainFlow.CardDetail> {
-            // TODO: CardDetailScreen
+            CardDetailScreen(
+                viewModel = hiltViewModel(),
+                onNavigateBack = { navController.popBackStack() }
+            )
         }
 
         composable<Routes.MainFlow.Transfers> {

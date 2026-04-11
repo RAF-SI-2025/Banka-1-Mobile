@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <!-- Emulator loopback alias -->
+        <domain includeSubdomains="false">10.0.2.2</domain>
+        <!-- Physical device on same WiFi — replace with your LAN IP -->
+        <domain includeSubdomains="false">192.168.1.15</domain>
+    </domain-config>
+</network-security-config>

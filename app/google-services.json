@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "153792147048",
+    "project_id": "banka-1-firebase",
+    "storage_bucket": "banka-1-firebase.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:153792147048:android:a75e544faf9bd18da555dd",
+        "android_client_info": {
+          "package_name": "rs.raf.banka1.mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAFDHGCEJSncaT4crwQ0iZGgPYiP39Jde4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

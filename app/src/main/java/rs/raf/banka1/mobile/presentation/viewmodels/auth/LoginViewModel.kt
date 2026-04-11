@@ -1,9 +1,13 @@
 package rs.raf.banka1.mobile.presentation.viewmodels.auth
 
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
+import rs.raf.banka1.mobile.data.apis.NotificationApi
 import rs.raf.banka1.mobile.data.remote.NetworkResult
+import rs.raf.banka1.mobile.data.remote.requests.FcmTokenRequest
 import rs.raf.banka1.mobile.data.repository.ClientData
 import rs.raf.banka1.mobile.data.repository.UserPreferencesRepository
 import rs.raf.banka1.mobile.domain.repository.AuthRepository
@@ -15,6 +19,7 @@ import javax.inject.Inject
 @HiltViewModel
 class LoginViewModel @Inject constructor(
     private val authRepository: AuthRepository,
+    private val notificationApi: NotificationApi,
     private val userPreferencesRepository: UserPreferencesRepository
 ) : BaseMviViewModel<UiState, UiEvent, SideEffect>(
     UiState()
@@ -26,6 +31,16 @@ class LoginViewModel @Inject constructor(
                 is UiEvent.SendCredentials -> performLogin(event.email.trim(), event.password)
                 is UiEvent.ClearError -> setState { copy(error = null) }
             }
+        }
+    }
+
+    private suspend fun registerFcmToken(clientId: Long) {
+        try {
+            val token = FirebaseMessaging.getInstance().token.await()
+            userPreferencesRepository.saveFcmToken(token)
+            notificationApi.registerFcmToken(FcmTokenRequest(clientId = clientId, fcmToken = token))
+        } catch (e: Exception) {
+            // best-effort; login still succeeds
         }
     }
 
@@ -46,6 +61,7 @@ class LoginViewModel @Inject constructor(
                         email = response.email
                     )
                 )
+                registerFcmToken(response.id)
                 setState { copy(isLoading = false) }
                 sendEffect { SideEffect.NavigateToDashboard }
             }

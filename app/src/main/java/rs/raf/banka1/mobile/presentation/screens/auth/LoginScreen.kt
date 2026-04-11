@@ -206,22 +206,6 @@ fun LoginScreen(
                                 )
                             }
                         }
-
-                        // This spacer pushes the fingerprint icon to the bottom
-                        Spacer(modifier = Modifier.weight(1f))
-
-                        // Biometric/Fingerprint section
-                        IconButton(
-                            onClick = { /* Handle Biometric */ },
-                            modifier = Modifier.size(72.dp) // Made it slightly larger since it stands alone now
-                        ) {
-                            Icon(
-                                imageVector = Icons.Rounded.Fingerprint,
-                                contentDescription = "Biometric Login",
-                                tint = authAccentColor(),
-                                modifier = Modifier.fillMaxSize()
-                            )
-                        }
                     }
                 }
             }

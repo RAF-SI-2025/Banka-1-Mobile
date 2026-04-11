@@ -44,6 +44,7 @@ class BankMessagingService : FirebaseMessagingService() {
         private const val CHANNEL_ID = "verification_codes"
         private const val CHANNEL_NAME = "Verifikacioni kodovi"
         private const val OTP_VALIDITY_MILLIS = 5 * 60 * 1000L // 5 minutes
+        private const val NOTIFICATION_ID = 1001
     }
 
     override fun onNewToken(token: String) {
@@ -69,8 +70,8 @@ class BankMessagingService : FirebaseMessagingService() {
         val sessionId = data["sessionId"] ?: ""
         val now = System.currentTimeMillis()
 
-        // Persist to Room
         appScope.launch {
+            // Always persist to Room so code is available when user opens the app
             verificationCodeDao.insert(
                 VerificationCodeEntity(
                     code = code,
@@ -80,10 +81,13 @@ class BankMessagingService : FirebaseMessagingService() {
                     expiresAt = now + OTP_VALIDITY_MILLIS
                 )
             )
-        }
 
-        // Show local notification
-        showVerificationNotification(code, operationType)
+            // Only show system notification if user is currently logged in
+            val isLoggedIn = userPreferencesRepository.readClientData().firstOrNull() != null
+            if (isLoggedIn) {
+                showVerificationNotification(operationType)
+            }
+        }
     }
 
     private suspend fun registerTokenWithBackend(token: String) {
@@ -102,7 +106,7 @@ class BankMessagingService : FirebaseMessagingService() {
         }
     }
 
-    private fun showVerificationNotification(code: String, operationType: String) {
+    private fun showVerificationNotification(operationType: String) {
         val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
 
         // Create channel (required for Android 8.0+)
@@ -139,12 +143,12 @@ class BankMessagingService : FirebaseMessagingService() {
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle("Verifikacioni kod")
-            .setContentText("Vas kod za $opLabel: $code")
+            .setContentText("Novi verifikacioni kod za $opLabel - otvorite aplikaciju")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
             .build()
 
-        notificationManager.notify(code.hashCode(), notification)
+        notificationManager.notify(NOTIFICATION_ID, notification)
     }
 }

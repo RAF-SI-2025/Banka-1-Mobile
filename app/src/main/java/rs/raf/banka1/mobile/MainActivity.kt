@@ -5,7 +5,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.activity.ComponentActivity
@@ -21,16 +20,8 @@ import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.rememberNavController
-import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
-import rs.raf.banka1.mobile.core.di.ApplicationScope
 import rs.raf.banka1.mobile.core.network.managers.AuthSessionManager
-import rs.raf.banka1.mobile.data.apis.NotificationApi
-import rs.raf.banka1.mobile.data.remote.requests.FcmTokenRequest
 import rs.raf.banka1.mobile.data.repository.UserPreferencesRepository
 import rs.raf.banka1.mobile.presentation.navigation.RootNavGraph
 import rs.raf.banka1.mobile.presentation.navigation.Routes
@@ -47,14 +38,7 @@ class MainActivity : ComponentActivity() {
     lateinit var userPreferencesRepository: UserPreferencesRepository
 
     @Inject
-    lateinit var notificationApi: NotificationApi
-
-    @Inject
     lateinit var authSessionManager: AuthSessionManager
-
-    @Inject
-    @ApplicationScope
-    lateinit var appScope: CoroutineScope
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
@@ -75,9 +59,6 @@ class MainActivity : ComponentActivity() {
                 )
             }
         }
-
-        // Sync FCM token on app start
-        syncFcmToken()
 
         setContent {
             Banka1MobileTheme {
@@ -120,23 +101,5 @@ class MainActivity : ComponentActivity() {
         setIntent(intent)
     }
 
-    private fun syncFcmToken() {
-        FirebaseMessaging.getInstance().token.addOnSuccessListener { token ->
-            Log.d("DEBUG", "FCM token: $token")
-            appScope.launch {
-                userPreferencesRepository.saveFcmToken(token)
-                try {
-                    val clientData = userPreferencesRepository.readClientData().firstOrNull()
-                    if (clientData != null) {
-                        notificationApi.registerFcmToken(
-                            FcmTokenRequest(clientId = clientData.id, fcmToken = token)
-                        )
-                        Log.d("MainActivity", "FCM token synced with backend")
-                    }
-                } catch (e: Exception) {
-                    Log.w("MainActivity", "Failed to sync FCM token: ${e.message}")
-                }
-            }
-        }
-    }
+
 }

@@ -25,4 +25,7 @@ interface VerificationCodeDao {
 
     @Query("DELETE FROM verification_codes WHERE expiresAt < :now")
     suspend fun deleteExpired(now: Long)
+
+    @Query("DELETE FROM verification_codes")
+    suspend fun deleteAll()
 }

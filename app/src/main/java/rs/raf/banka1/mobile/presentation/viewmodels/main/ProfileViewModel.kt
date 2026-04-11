@@ -5,6 +5,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import rs.raf.banka1.mobile.data.apis.ClientApi
+import rs.raf.banka1.mobile.data.local.VerificationCodeDao
 import rs.raf.banka1.mobile.data.remote.NetworkResult
 import rs.raf.banka1.mobile.data.remote.responses.ClientInfoResponseDto
 import rs.raf.banka1.mobile.data.repository.UserPreferencesRepository
@@ -15,6 +16,7 @@ import javax.inject.Inject
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     private val clientApi: ClientApi,
+    private val verificationCodeDao: VerificationCodeDao,
     private val userPreferencesRepository: UserPreferencesRepository
 ) : BaseMviViewModel<ProfileContract.UiState, ProfileContract.UiEvent, ProfileContract.SideEffect>(
     ProfileContract.UiState()
@@ -69,6 +71,7 @@ class ProfileViewModel @Inject constructor(
 
     private fun logout() {
         viewModelScope.launch {
+            verificationCodeDao.deleteAll()
             userPreferencesRepository.clearAll()
             sendEffect { ProfileContract.SideEffect.NavigateToLogin }
         }

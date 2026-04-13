@@ -4,7 +4,10 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.os.Build
+import androidx.core.content.ContextCompat
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.google.firebase.messaging.FirebaseMessagingService
@@ -140,8 +143,16 @@ class BankMessagingService : FirebaseMessagingService() {
             else -> operationType
         }
 
+        val drawable = ContextCompat.getDrawable(this, R.mipmap.ic_launcher)
+        val largeIcon = Bitmap.createBitmap(128, 128, Bitmap.Config.ARGB_8888).also {
+            val canvas = Canvas(it)
+            drawable?.setBounds(0, 0, 128, 128)
+            drawable?.draw(canvas)
+        }
+
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setLargeIcon(largeIcon)
             .setContentTitle("Verifikacioni kod")
             .setContentText("Novi verifikacioni kod za $opLabel - otvorite aplikaciju")
             .setPriority(NotificationCompat.PRIORITY_HIGH)

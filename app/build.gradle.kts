@@ -10,28 +10,37 @@ plugins {
 
 android {
     namespace = "rs.raf.banka1.mobile"
-    compileSdk = 35 // Changed from 36 to 35
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "rs.raf.banka1.mobile"
-        minSdk = 26     // Keep this at 26 (Android 8.0) - this is perfect
-        targetSdk = 35  // Changed from 36 to 35
+        minSdk = 26
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
+        // Default for debug — use adb reverse tcp:80 tcp:80 with USB,
+        // or replace with laptop's LAN IP when on WiFi
         buildConfigField("String", "BASE_URL", "\"http://192.168.1.15/\"")
+    }
+
+    signingConfigs {
+        create("release") {
+            storeFile = file("${System.getProperty("user.home")}/.android/debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
     }
 
     buildTypes {
         release {
+            signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-            buildConfigField("String", "BASE_URL", "\"http://192.168.1.15/\"") // fixme, namestiti ovo na lokalnu adresu racunara pre odbrane, moze da se promeni
+            isShrinkResources = false
+            buildConfigField("String", "BASE_URL", "\"http://192.168.1.15/\"")
         }
     }
 

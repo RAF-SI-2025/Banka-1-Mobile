@@ -20,3 +20,11 @@ data class LoanResponseDto(
     @field:Json(name = "remainingDebt") val remainingDebt: Double? = null,
     @field:Json(name = "status") val status: String? = null
 )
+
+@JsonClass(generateAdapter = true)
+data class LoanPageResponse(
+    @field:Json(name = "content") val content: List<LoanResponseDto> = emptyList(),
+    @field:Json(name = "page") val page: Int = 0,
+    @field:Json(name = "size") val size: Int = 0,
+    @field:Json(name = "totalElements") val totalElements: Long = 0
+)

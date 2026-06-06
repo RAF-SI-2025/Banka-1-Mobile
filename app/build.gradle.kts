@@ -8,6 +8,8 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
+val productionBaseUrl = "https://banka-1.radenkovic.rs/"
+
 android {
     namespace = "rs.raf.banka1.mobile"
     compileSdk = 35
@@ -20,10 +22,7 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
-        // Default for debug — use adb reverse tcp:80 tcp:80 with USB,
-        // or replace with laptop's LAN IP when on WiFi
-        buildConfigField("String", "BASE_URL", "\"http://192.168.1.15/\"")
+        buildConfigField("String", "BASE_URL", "\"$productionBaseUrl\"")
     }
 
     signingConfigs {
@@ -40,7 +39,6 @@ android {
             signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = false
             isShrinkResources = false
-            buildConfigField("String", "BASE_URL", "\"http://192.168.1.15/\"")
         }
     }
 
